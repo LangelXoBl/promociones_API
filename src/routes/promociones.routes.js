@@ -4,14 +4,14 @@ import { promoValidate } from "../validators/promo.validator.js";
 
 const router = Router();
 
-router.get("/all", promoCtrl.misPromociones);
+router.post("/show/all", promoCtrl.misPromociones);
 
-router.get("/:id", promoCtrl.onePromocion);
+router.post("/show/:id", promoCtrl.onePromocion);
 
-router.post("/",promoValidate, promoCtrl.createPromocion);
+router.post("/new", promoValidate, promoCtrl.createPromocion);
 
-router.put("/:id",promoValidate, promoCtrl.editPromocion);
+router.post("/edit/:id", promoValidate, promoCtrl.editPromocion);
 
-router.delete("/:id", promoCtrl.deletePromocion);
+router.post("/delete/:id", promoCtrl.deletePromocion);
 
 export default router;

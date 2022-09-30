@@ -2,15 +2,24 @@ import promocionModel from "../models/promociones.model.js";
 
 export const createPromocion = async (req, res) => {
   try {
-    const { title, nivel, descuento, vigencia } = req.body;
+    const { titulo, descuento, vigencia } = req.body; // #datos de la promo
+    /*
+     *id_unity:Es el id de la unidade a la cual se le aplicara la promocion
+     *floor:es el piso al cual se le debe aplicar toda la promo, tener en cuanta que tambien debe tener el code del desarrollo
+     *developmetn: es el code del desarrollo a aplicar la promocion
+     */
+    const { unidad, nivel, desarrollo } = req.body; //# Datos para aplicar la promo
     const Promotion = new promocionModel({
-      title: title,
+      titulo: titulo,
       nivel: nivel,
       descuento: descuento,
       vigencia: vigencia,
+      nivel: nivel,
+      unidad: unidad,
+      desarrollo: desarrollo,
     });
     const nwprom = await Promotion.save();
-    res.json(nwprom);
+    res.json({ nwprom });
   } catch (Error) {
     res
       .status(500)

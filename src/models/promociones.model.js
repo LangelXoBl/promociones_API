@@ -1,17 +1,23 @@
-import { Schema, model } from "mongoose";
+import { Schema, model, Types } from "mongoose";
 
 const promSchema = new Schema(
   {
-    title: {
+    titulo: {
       //# titulo de la oferta
       type: String,
       required: true,
       trim: true,
     },
+    unidad: {
+      _id: Types.ObjectId,
+    },
     nivel: {
-      //# puede ser desarrollo | piso | unidad
-      type: String,
-      required: true,
+      //# puede ser piso | seccion
+      tipo: String,
+      code: String,
+    },
+    desarrollo: {
+      code: String,
     },
     descuento: {
       tipo: { type: String, required: true }, //#fijo | porcentaje

@@ -2,7 +2,7 @@ import { body } from "express-validator";
 import { validationResult } from "express-validator";
 
 export const promoValidate = [
-  body("title")
+  body("titulo")
     .exists()
     .withMessage("El titulo es requerido")
     .isLength({ max: 200 })
