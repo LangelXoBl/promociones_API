@@ -1,4 +1,4 @@
-import { Schema, model, Types, SchemaType } from "mongoose";
+import { Schema, model, Types, SchemaType } from 'mongoose';
 
 const propertySchema = new Schema({
   // código único a nivel desarrollo
@@ -8,7 +8,7 @@ const propertySchema = new Schema({
   // precio de la unidad
   pricing: {
     price: { type: Number, default: 0 },
-    currency: { type: String, default: "" },
+    currency: { type: String, default: '' },
   },
   // status de la unidad
   // disponible - reservado - vendido
@@ -35,7 +35,7 @@ const propertySchema = new Schema({
   building: {
     // tipo de construcción
     // estudio - departamento - casa ...
-    type: { type: String, default: "" },
+    type: { type: String, default: '' },
     construction: Number,
     //agreagr contruccion adelante o antras
     construction_front: Number,
@@ -48,8 +48,8 @@ const propertySchema = new Schema({
   construction_allowed: {
     unit: {
       type: String,
-      enum: ["m2", "%", ""],
-      default: "",
+      enum: ['m2', '%', ''],
+      default: '',
     },
     total: Number,
   },
@@ -82,5 +82,9 @@ const propertySchema = new Schema({
   },
   // lista de amenidades con que cuenta una propiedad
   amenities: [],
+  promotion:{
+    _id: Types.ObjectId,
+    price: Number,
+  }
 });
-export default model("properties", propertySchema);
+export default model('properties', propertySchema);
