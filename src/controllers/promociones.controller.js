@@ -1,7 +1,7 @@
 import promocionModel from '../models/promociones.model.js';
 import propertiesModel from '../models/properties.model.js';
 
-const aplicarPromo = (properties, tipo, cantidad,promotion) => {
+const aplicarPromo = (properties, tipo, cantidad, id) => {
   properties.forEach(async (properties) => {
     //*se saca el id y el precio de la propiedad
     let {
@@ -10,10 +10,10 @@ const aplicarPromo = (properties, tipo, cantidad,promotion) => {
     } = properties;
     //*se calcula el precio con descuento
     if (tipo == 'fijo') price -= cantidad;
-    else price -= price * (cantidad / 100);
+    else if (tipo == 'porcentaje') price -= price * (cantidad / 100);
     //*se guarda el precio de la promo y el id
     await propertiesModel.findByIdAndUpdate(_id, {
-      promotion: { _id:promotion.id, price },
+      promotion: { _id: id, price },
     });
   });
 };
@@ -26,7 +26,7 @@ export const createPromocion = async (req, res) => {
      #desarrollo: es el code del desarrollo a aplicar la promocion
      */
     const { unidad, nivel, desarrollo } = req.body; //# Datos para aplicar la promo
-    //*Se crea el modelo de la promotions
+    //*Se crea el modelo de la promocion
     const Promotion = new promocionModel({
       titulo,
       nivel,
@@ -36,56 +36,49 @@ export const createPromocion = async (req, res) => {
       unidad,
       desarrollo,
     });
-
-    //*se define que tipo de promocion sera
+    let properties;
+    //*se busca a que propiedades aplicarle la promocion
     if (unidad._id) {
-      //*se obtiene la propiedad que se va a modificar
-      let {
-        pricing: { price },
-        _id,
-      } = await propertiesModel.findById(unidad._id, '_id pricing.price');
-      console.log(price);
-      //*se calcula la promocion
-      if (descuento.tipo == 'fijo') price -= descuento.cantidad;
-      else price -= price * (descuento.cantidad / 100);
-
-      //*se guarda el precio e id de la promocion
-      await propertiesModel.findByIdAndUpdate(_id, {
-        promotion: { _id: Promotion.id, price: price },
-      });
-      console.log('la promocion es a una propiedad');
+      //!hacer que en unidad reciva un array de id para aplicar la promo
+      properties = await propertiesModel.find(
+        { _id: unidad._id },
+        '_id pricing.price'
+      );
     } else if (nivel.code) {
-      //*busca las propiedades que se van a afectar
-      const properties = await propertiesModel.find(
+      properties = await propertiesModel.find(
         {
           'real_estate_development.code': desarrollo.code,
           'floor.code': nivel.code,
         },
         '_id pricing.price promotion'
       );
-      //*funcion para aplicar las promociones
-      aplicarPromo(properties, descuento.tipo, descuento.cantidad,Promotion);
-
-      console.log('La promocion es para un nivel');
-      //return res.json({ properties });
     } else if (desarrollo && !unidad._id) {
-      //*Busca las propiedades a aplicar
-      const properties = await propertiesModel.find(
+      properties = await propertiesModel.find(
         { 'real_estate_development.code': desarrollo.code },
         '_id pricing.price promotion'
       );
-      //*aplica la promocion a las propiedades
-      aplicarPromo(properties, descuento.tipo, descuento.cantidad,Promotion);
-      console.log('la promocion es para toda el desarrollo');
-      //return res.json({ properties });
     } else {
       return res.json({
-        msg: 'No se especifico a que properties aplicarle la promocion',
+        msg: 'No se especifico a que propiedades aplicarle la promocion',
       });
     }
+    const existProm = properties.filter(
+      (propertie) => propertie.promotion != null
+    );
+    if (existProm)
+      return res.status(400).json({
+        msg: 'algunas propiedades selecionadad ya tienen promocio',
+        existProm,
+      });
+    //*se aplican las promociones
+    aplicarPromo(properties, descuento.tipo, descuento.cantidad, Promotion.id);
     //*guardar la promocion creada
     const nwprom = await Promotion.save();
-    res.json({ msg: 'promocion creada y aplicada' });
+    res.json({
+      msg: `promocion creada y aplicada`,
+      Properties_afectados: properties.length,
+      nwprom,
+    });
   } catch (Error) {
     res
       .status(500)
@@ -120,11 +113,26 @@ export const onePromocion = async (req, res) => {
 
 export const editPromocion = async (req, res) => {
   try {
+    //*No se podra cambiar a que propiedades aplicarle la promocion
     const actu = await promocionModel.findByIdAndUpdate(
       req.params.id,
       req.body
     );
-    res.send(actu);
+    //*busca las propiedades afectadas por la promocion
+    const aplicados = await propertiesModel.find(
+      {
+        'promotion._id': req.params.id,
+      },
+      '_id pricing.price promotion'
+    );
+    //*Se modifica el precio de promocion de las propiedades
+    aplicarPromo(
+      aplicados,
+      req.body.descuento.tipo,
+      req.body.descuento.cantidad,
+      req.params.id
+    );
+    res.json({ msg: 'cambios guardados y aplicados', aplicados });
   } catch (Error) {
     res.status(500).json({
       message: Error.message || 'Error al modificar la promocion',
@@ -134,12 +142,17 @@ export const editPromocion = async (req, res) => {
 
 export const deletePromocion = async (req, res) => {
   try {
+    //*Se eliminan el campo promociones de las propiedades afectadas
     const eliminados = await propertiesModel.updateMany(
       { 'promotion._id': req.params.id },
       { promotion: {} }
     );
+    //*Se elimina la promocion
     await promocionModel.findByIdAndDelete(req.params.id);
-    res.json({msg:'Promocion eliminada',actualizados:eliminados.modifiedCount});
+    res.json({
+      msg: 'Promocion eliminada',
+      Properties_afectados: eliminados.modifiedCount,
+    });
   } catch (Error) {
     res.status(500).json({
       message: Error.message || 'Error al eliminar promocion',

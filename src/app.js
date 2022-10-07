@@ -14,6 +14,6 @@ app.use(Express.urlencoded({ extended: false }));
 
 //*Routes
 app.use("/api/v2/myPromotions", routePromotions);
-app.use("/api/v2/properties", routerProperties);
+app.use("/api/v2/realEstateDevelopment", routerProperties);
 
 export default app;
