@@ -9,8 +9,8 @@ const aplicarPromo = (properties, tipo, cantidad, id) => {
       pricing: { price },
     } = properties;
     //*se calcula el precio con descuento
-    if (tipo == 'fijo') price -= cantidad;
-    else if (tipo == 'porcentaje') price -= price * (cantidad / 100);
+    if (tipo == 'Fijo') price -= cantidad;
+    else if (tipo == 'Porcentual') price -= price * (cantidad / 100);
     //*se guarda el precio de la promo y el id
     await propertiesModel.findByIdAndUpdate(_id, {
       promotion: { _id: id, price },
@@ -38,13 +38,17 @@ export const createPromocion = async (req, res) => {
     });
     let properties;
     //*se busca a que propiedades aplicarle la promocion
-    if (unidad._id) {
+    if (unidad) {
       //!hacer que en unidad reciva un array de id para aplicar la promo
       properties = await propertiesModel.find(
         { _id: unidad._id },
-        '_id pricing.price'
+        '_id pricing.price promotion'
       );
-    } else if (nivel.code) {
+      if (properties.length <= 0)
+        return res
+          .status(400)
+          .json({ msg: 'La propiedad especificada no existe' });
+    } else if (nivel) {
       properties = await propertiesModel.find(
         {
           'real_estate_development.code': desarrollo.code,
@@ -52,23 +56,32 @@ export const createPromocion = async (req, res) => {
         },
         '_id pricing.price promotion'
       );
-    } else if (desarrollo && !unidad._id) {
+      console.log('aplicando a un nivel');
+      if (properties.length <= 0)
+        return res
+          .status(400)
+          .json({ msg: 'El nivel no existe o no tiene propiedades' });
+    } else if (desarrollo) {
       properties = await propertiesModel.find(
         { 'real_estate_development.code': desarrollo.code },
         '_id pricing.price promotion'
       );
+      console.log('Aplicando a todo el desarrollo');
     } else {
       return res.json({
         msg: 'No se especifico a que propiedades aplicarle la promocion',
       });
     }
+
+    //*Revisa si las propiedades selecionadas ya tiene una promo vigente
     const existProm = properties.filter(
-      (propertie) => propertie.promotion != null
+      (propertie) => propertie.promotion.price != undefined
     );
-    if (existProm)
+    console.log(existProm);
+    if (existProm.length > 0)
       return res.status(400).json({
-        msg: 'algunas propiedades selecionadad ya tienen promocio',
-        existProm,
+        msg: 'Esta o algunas propiedades selecionadas ya tienen una promocion',
+        list: existProm,
       });
     //*se aplican las promociones
     aplicarPromo(properties, descuento.tipo, descuento.cantidad, Promotion.id);
@@ -82,21 +95,19 @@ export const createPromocion = async (req, res) => {
   } catch (Error) {
     res
       .status(500)
-      .json({ message: Error.message || 'Error al crear la promocion' });
+      .json({ message: 'Error al crear la promocion', Error: Error.message });
   }
 };
 
 export const misPromociones = async (req, res) => {
   try {
-    const cond = req.query.nivel;
+    const cond = req.query.desarrollo;
     const promotions = await promocionModel.find(
-      cond ? { nivel: { $regex: cond, $options: 'i' } } : {}
+      cond ? { 'desarrollo.code': { $regex: cond, $options: 'i' } } : {}
     );
     res.json(promotions);
   } catch (Error) {
-    res
-      .status(500)
-      .json({ message: error.message || 'Error al devolver promociones' });
+    res.status(500).json({ message: Error || 'Error al devolver promociones' });
   }
 };
 

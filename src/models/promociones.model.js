@@ -1,4 +1,4 @@
-import { Schema, model, Types } from "mongoose";
+import { Schema, model, Types } from 'mongoose';
 
 const promSchema = new Schema(
   {
@@ -9,7 +9,7 @@ const promSchema = new Schema(
       trim: true,
     },
     unidad: {
-      _id: Types.ObjectId,
+      _id: Types.ObjectId, //!Al crear una promo esto debe estar como nulo
     },
     nivel: {
       //# puede ser piso | seccion
@@ -17,22 +17,20 @@ const promSchema = new Schema(
       code: String,
     },
     desarrollo: {
-      code: String,
+      code: {
+        type: String,
+        required: true,
+      },
     },
     descuento: {
-      tipo: { type: String, required: true }, //#fijo | porcentaje
+      tipo: { type: String, required: true }, //#fijo | porcentual
       cantidad: { type: Number, required: true },
-      facilidades: [
-        String,
-        //#facilidades de pago
-        /*{
-          title: String,
-          descripcion: String,
-        },*/
-      ],
+      facilidades: {
+        type: String,
+      },
     },
     vigencia: {
-      type: Date,
+      type: Date, //# 2022/12/25
       //#fecha de vigencia no requerido
     },
   },
@@ -42,4 +40,4 @@ const promSchema = new Schema(
   }
 );
 
-export default model("Promotions", promSchema);
+export default model('Promotions', promSchema);
