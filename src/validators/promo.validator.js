@@ -3,7 +3,7 @@ import { validationResult } from 'express-validator';
 
 export const promoValidate = [
   body('titulo')
-    .exists()
+    .exists({})
     .withMessage('El titulo es requerido')
     .isLength({ max: 200 })
     .withMessage('Max 200 caracteres'),
@@ -14,7 +14,7 @@ export const promoValidate = [
     .withMessage('Es requerido')
     .isNumeric()
     .withMessage('Debe ser de tipo num'),
-  body('vigencia').isDate(),
+  body('vigencia').isISO8601().toDate(),
   (req, res, next) => {
     const Errors = validationResult(req);
     if (!Errors.isEmpty())

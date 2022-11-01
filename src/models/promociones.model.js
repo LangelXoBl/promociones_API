@@ -8,9 +8,10 @@ const promSchema = new Schema(
       required: true,
       trim: true,
     },
-    unidad: {
+    /*unidad: {
       _id: Types.ObjectId, //!Al crear una promo esto debe estar como nulo
-    },
+    },*/
+    unidades: [Types.ObjectId],
     nivel: {
       //# puede ser piso | seccion
       tipo: String,
@@ -30,7 +31,7 @@ const promSchema = new Schema(
       },
     },
     vigencia: {
-      type: Date, //# 2022/12/25
+      type: Date, //# 2022/12/25T00:00:00.000Z
       //#fecha de vigencia no requerido
     },
   },
