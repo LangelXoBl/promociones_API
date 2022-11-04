@@ -21,7 +21,7 @@ export const createPromocion = async (req, res) => {
   try {
     const { titulo, descuento, vigencia } = req.body; // #datos de la promo
     /*
-     #unidad:Es el id de la unidade a la cual se le aplicara la promocion
+     #unidades:Es el array con los id de las propiedades a las que se le aplicara la promocion
      #nivel:es el piso al cual se le debe aplicar toda la promo, tener en cuanta que tambien debe tener el code del desarrollo
      #desarrollo: es el code del desarrollo a aplicar la promocion
      */
@@ -138,7 +138,11 @@ export const onePromocion = async (req, res) => {
       .json({ message: error.message || 'Error al buscar la promoción' });
   }
 };
-
+/*
+!Mejorar el algoritmo para poder agregar y quitar propiedades una vez creada
+?Lo mejor seria que cuando se actualize una promo se elimine de las propiedades ya aplicadas y se vuelva a aplicar
+*Esto seria para que se le aplique el nuevo descuento en cado de que se haya modificado
+*/
 export const editPromocion = async (req, res) => {
   try {
     const { _id } = req.body;
@@ -146,20 +150,38 @@ export const editPromocion = async (req, res) => {
     //*No se podra cambiar a que propiedades aplicarle la promocion
     const actu = await promocionModel.findByIdAndUpdate(_id, req.body);
     //*busca las propiedades afectadas por la promocion
-    const aplicados = await propertiesModel.find(
-      {
-        'promotion._id': _id,
-      },
-      '_id pricing.price promotion'
+    await propertiesModel.updateMany(
+      //#Quita las promociones de todos los que aplico
+      { 'promotion._id': _id },
+      { promotion: {} }
     );
+    let properties;
+    //console.log(req.body.unidades);
+    if (req.body.unidades.length > 0) {
+      //#recive un array con los Id de propiedades y crea un nuevo array de objetos con los datos de las
+      //# propiedades para poder aplicarle la promocion
+      properties = await Promise.all(
+        req.body.unidades.map(async (id) => {
+          return await propertiesModel.findById(
+            id,
+            '_id pricing.price promotion'
+          );
+        })
+      );
+      console.log('aplicando a propiedades');
+      if (properties.length <= 0)
+        return res.status(400).json({
+          msg: 'La propiedad especificada no existe',
+        });
+    }
     //*Se modifica el precio de promocion de las propiedades
     aplicarPromo(
-      aplicados,
+      properties,
       req.body.descuento.tipo,
       req.body.descuento.cantidad,
       _id
     );
-    res.json({ msg: 'cambios guardados y aplicados', aplicados });
+    res.json({ msg: 'cambios guardados y aplicados', properties });
   } catch (Error) {
     res.status(500).json({
       message: Error.message || 'Error al modificar la promocion',

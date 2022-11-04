@@ -28,12 +28,16 @@ export const orderFloor = async (req, res) => {
       {
         $group: {
           //#Agrupa las propiedades por el nombre del nivel
-          _id: '$floor.code',
+          _id: '$floor.name',
           //#los guarda en un array con su code e id
-          properties: { $push: { _id: '$_id', code: '$code' } },
+          children: { $push: { id: '$_id', name: '$code' } },
         },
       },
-      { $sort: { 'properties.code': 1 } },
+      {
+        //#Agrega esos campos para que sea usado en el front
+        $addFields: { name: '$_id', id: '$_id' },
+      },
+      { $sort: { 'children.name': 1 } },
     ]);
     res.json(floor);
   } catch (e) {
