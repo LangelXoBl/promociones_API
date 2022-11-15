@@ -82,8 +82,5 @@ const propertySchema = new Schema({
   },
   // lista de amenidades con que cuenta una propiedad
   amenities: [],
-  promotion: {
-    _id: Types.ObjectId,
-  },
 });
 export default model('properties', propertySchema);

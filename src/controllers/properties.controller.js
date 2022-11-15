@@ -1,7 +1,8 @@
 import propertiesModel from '../models/properties.model.js';
 import promocionesModel from '../models/promociones.model.js';
+import developmentModel from '../models/development.model.js';
 
-export const properties = async (req, res) => {
+/*export const properties = async (req, res) => {
   try {
     const { real_estate_development_code } = req.body;
     const properties = await propertiesModel.find({
@@ -13,9 +14,9 @@ export const properties = async (req, res) => {
       .status(400)
       .json({ message: Error.message || 'Error al devolver properties' });
   }
-};
+};*/
 
-export const orderFloor = async (req, res) => {
+/*export const orderFloor = async (req, res) => {
   try {
     const { real_estate_development_code } = req.body; //#request
     const floor = await propertiesModel.aggregate([
@@ -43,7 +44,7 @@ export const orderFloor = async (req, res) => {
   } catch (e) {
     return res.status(400).json({ message: e.message });
   }
-};
+};*/
 
 export const propertiesList = async (req, res) => {
   try {
@@ -65,7 +66,8 @@ export const propertiesList = async (req, res) => {
 export const promotion = async (req, res) => {
   try {
     const { real_estate_development_code } = req.body; //#request
-    const proper = await propertiesModel.aggregate([
+    //#devuelve las propiedades con todas las promociones aplicadas
+    const Property = await propertiesModel.aggregate([
       {
         $match: {
           'real_estate_development.code': real_estate_development_code,
@@ -74,13 +76,12 @@ export const promotion = async (req, res) => {
       {
         $lookup: {
           from: 'promotions',
-          localField: 'promotion._id',
-          foreignField: '_id',
+          localField: '_id',
+          foreignField: 'unidades',
           pipeline: [
             { $match: { vigencia: { $gt: new Date() } } },
             {
               $project: {
-                _id: 0,
                 unidades: 0,
                 desarrollo: 0,
                 createdAt: 0,
@@ -92,7 +93,58 @@ export const promotion = async (req, res) => {
         },
       },
     ]);
-    res.json(proper);
+    //#Busca las promociones que se apliquen a todo el desarrollo
+    const Development = await developmentModel.aggregate([
+      {
+        $match: {
+          code: real_estate_development_code,
+        },
+      },
+      {
+        $lookup: {
+          from: 'promotions',
+          localField: 'code',
+          foreignField: 'desarrollo.code',
+          pipeline: [
+            {
+              $match: { vigencia: { $gt: new Date() }, unidades: { $size: 0 } },
+            },
+            {
+              $project: {
+                unidades: 0,
+                desarrollo: 0,
+                createdAt: 0,
+                updatedAt: 0,
+              },
+            },
+          ],
+          as: 'promotion',
+        },
+      },
+    ]);
+    //const development= await pr
+    res.json({
+      Message: `Num Properties Found: ${Property.length}`,
+      Data: { Property, Development },
+    });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+//#Para consultar las promociones de una propiedad
+//!Mejorar para que solo se mande una promo o mandarlo dentro del data
+export const property = async (req, res) => {
+  const { property_id } = req.body;
+  console.log(property_id);
+  try {
+    const data = await propertiesModel.findById(property_id);
+    const promo = await promocionesModel.find({ unidades: property_id });
+    const dev = await promocionesModel.find({
+      'desarrollo.code': data.real_estate_development.code,
+      unidades: { $size: 0 },
+    });
+
+    res.json({ data, promo, dev });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
