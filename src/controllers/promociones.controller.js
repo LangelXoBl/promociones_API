@@ -1,14 +1,21 @@
 import promotionModel from '../models/promotions.model.js';
 
+const dateFormat = (date) => {
+  //#funcion para darle las 24 hr a la promocion
+  const string = date.toISOString();
+  return string.split('T')[0] + 'T23:59:59.000Z';
+};
 export const createPromotion = async (req, res) => {
   try {
-    const { title, discount, validity } = req.body; // #datos de la promo
+    const { title, discount } = req.body; // #datos de la promo
     /*
      #unidades:Es el array con los id de las propiedades a las que se le aplicara la promocion
      #desarrollo: si unidades no existe o esta vacio la promo se aplicara a todo el desarrollo
      */
-    let { properties, real_estate_development } = req.body;
+    let { properties, real_estate_development, validity } = req.body;
     //*Se crea el modelo de la promocion
+    console.log('antes', validity);
+    validity = dateFormat(validity);
     const Promotion = new promotionModel({
       title,
       discount,
@@ -61,14 +68,17 @@ export const onePromotion = async (req, res) => {
 export const editPromotion = async (req, res) => {
   try {
     const { _id } = req.body;
+    const { ...update } = req.body;
+    //*se le agregan las 23:59 hrs
+    update.validity = dateFormat(update.validity);
     if (!_id) return res.status(400).json({ message: 'Id no especificado' });
     //*Se podra cambiar a que propiedades aplicarle la promocion
-    const data = await promotionModel.findByIdAndUpdate(_id, req.body);
-    if (!data)
+    const exist = await promotionModel.findByIdAndUpdate(_id, update);
+    if (!exist)
       return res
         .status(400)
         .json({ message: 'La promocion especificada no existe' });
-    res.json({ msg: 'cambios guardados y aplicados', data });
+    res.json({ msg: 'cambios guardados y aplicados' });
   } catch (Error) {
     res.status(500).json({
       message: Error.message || 'Error al modificar la promocion',
