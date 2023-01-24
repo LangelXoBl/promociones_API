@@ -1,8 +1,6 @@
-import * as dotenv from 'dotenv';
-dotenv.config()
+import { PORT, MONGO_URL } from './config.js';
 import app from './app.js';
 import './DB.js';
 
-const port = process.env.PORT | 3000;
-app.listen(port);
-console.log('Serve on port', port);
+app.listen(PORT);
+console.log('Serve on port', PORT);
